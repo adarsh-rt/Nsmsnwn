@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Stateful Calculator</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+        :root {
+            --text-color: #ffffff;
+            --special-color: #ffc107;
+            --equal-color: #2196f3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #8bc6ec 0%, #9599e2 100%);
+        }
+
+        .calculator {
+            width: 100%;
+            max-width: 350px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 25px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .display-container {
+            width: 100%;
+            height: 140px;
+            padding: 10px 15px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: flex-end;
+            word-wrap: break-word;
+            overflow: hidden; 
+        }
+
+        #previous-operand-display {
+            width: 100%;
+            font-size: 1.5em;
+            color: rgba(255, 255, 255, 0.75);
+            text-align: right;
+            min-height: 40px;
+        }
+
+        #current-operand-display {
+            width: 100%;
+            font-weight: 600;
+            color: var(--text-color);
+            text-align: right;
+            height: 65px;
+            line-height: 65px;
+            white-space: nowrap;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        button {
+            height: 65px;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5em;
+            font-weight: 500;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text-color);
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover { background: rgba(255, 255, 255, 0.3); }
+        button:active { background: rgba(255, 255, 255, 0.4); transform: scale(0.95); }
+        .operator-ac, .operator { color: var(--special-color); font-weight: 600; }
+        #equalBtn { background: var(--equal-color); color: #ffffff; grid-column: span 2; border-radius: 32.5px; }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display-container">
+            <div id="previous-operand-display"></div>
+            <div id="current-operand-display">0</div>
+        </div>
+        <div class="buttons">
+            <button onclick="clearAll()" class="operator-ac">AC</button>
+            <button onclick="deleteLast()" class="operator">DEL</button>
+            <button onclick="chooseOperator('%')" class="operator">%</button>
+            <button onclick="chooseOperator('/')" class="operator">÷</button>
+            <button onclick="appendNumber('7')">7</button>
+            <button onclick="appendNumber('8')">8</button>
+            <button onclick="appendNumber('9')">9</button>
+            <button onclick="chooseOperator('*')" class="operator">×</button>
+            <button onclick="appendNumber('4')">4</button>
+            <button onclick="appendNumber('5')">5</button>
+            <button onclick="appendNumber('6')">6</button>
+            <button onclick="chooseOperator('-')" class="operator">-</button>
+            <button onclick="appendNumber('1')">1</button>
+            <button onclick="appendNumber('2')">2</button>
+            <button onclick="appendNumber('3')">3</button>
+            <button onclick="chooseOperator('+')" class="operator">+</button>
+            <button onclick="appendNumber('0')">0</button>
+            <button onclick="appendNumber('.')">.</button>
+            <button onclick="handleEquals()" id="equalBtn">=</button>
+        </div>
+    </div>
+
+    <script>
+        const previousOperandDisplay = document.getElementById('previous-operand-display');
+        const currentOperandDisplay = document.getElementById('current-operand-display');
+
+        let currentOperand = '0';
+        let previousOperand = '';
+        let operator = null;
+
+        function clearAll() {
+            currentOperand = '0';
+            previousOperand = '';
+            operator = null;
+            updateDisplay();
+        }
+
+        function deleteLast() {
+            if (currentOperand === 'Error' || currentOperand.length === 1) {
+                currentOperand = '0';
+            } else {
+                currentOperand = currentOperand.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        function appendNumber(number) {
+            if (number === '.' && currentOperand.includes('.')) return;
+            if (currentOperand === '0' && number !== '.') {
+                currentOperand = number;
+            } else if (currentOperand === 'Error') {
+                currentOperand = number;
+            } else {
+                currentOperand += number;
+            }
+            updateDisplay();
+        }
+
+        function chooseOperator(op) {
+            if (currentOperand === 'Error') return;
+            if (currentOperand === '' && previousOperand !== '') {
+                operator = op; // Allow changing operator
+                updateDisplay();
+                return;
+            }
+            if (previousOperand !== '') {
+                compute();
+            }
+            operator = op;
+            previousOperand = currentOperand;
+            currentOperand = '';
+            updateDisplay();
+        }
+
+        function compute() {
+            let result;
+            const prev = parseFloat(previousOperand);
+            const current = parseFloat(currentOperand);
+
+            if (isNaN(prev) || isNaN(current)) return;
+
+            switch (operator) {
+                case '+': result = prev + current; break;
+                case '-': result = prev - current; break;
+                case '*': result = prev * current; break;
+                case '/': result = current === 0 ? 'Error' : prev / current; break;
+                case '%': result = prev % current; break;
+                default: return;
+            }
+            currentOperand = result.toString();
+            operator = null;
+            previousOperand = '';
+        }
+
+        function handleEquals() {
+            if (operator === null || previousOperand === '') return;
+            compute();
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            currentOperandDisplay.textContent = currentOperand.replace(/\*/g, '×').replace(/\//g, '÷');
+            
+            if (operator != null) {
+                previousOperandDisplay.textContent = `${previousOperand} ${operator.replace('*', '×').replace('/', '÷')}`;
+            } else {
+                previousOperandDisplay.textContent = '';
+            }
+            adjustFontSize();
+        }
+
+        function adjustFontSize() {
+            const display = currentOperandDisplay;
+            const maxWidth = display.clientWidth;
+            let currentFontSize = 60;
+            const minFontSize = 20;
+            display.style.fontSize = currentFontSize + 'px';
+            while (display.scrollWidth > maxWidth && currentFontSize > minFontSize) {
+                currentFontSize--;
+                display.style.fontSize = currentFontSize + 'px';
+            }
+        }
+
+        // Initial call
+        updateDisplay();
+    </script>
+</body>
+</html>
+<script type="text/javascript">
+	atOptions = {
+		'key' : 'f0d6b31303db31898df2c84d86e5772e',
+		'format' : 'iframe',
+		'height' : 60,
+		'width' : 468,
+		'params' : {}
+	};
+</script>
+<script type="text/javascript" src="//www.highperformanceformat.com/f0d6b31303db31898df2c84d86e5772e/invoke.js"></script>
